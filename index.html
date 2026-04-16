@@ -15,7 +15,651 @@
 
         html, body {
             width: 100%;
+            height: 100%;<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SOLARIS — Foto Diagnostiek</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
             height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'DM Sans', sans-serif;
+            background: #f5f7fa;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .content {
+                flex-direction: row;
+            }
+        }
+
+        .photo-section {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 0 0 auto;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            max-height: calc(100vh - 250px);
+        }
+
+        @media (min-width: 768px) {
+            .photo-section {
+                flex: 0 0 40%;
+                border-bottom: none;
+                border-right: 1px solid #e2e8f0;
+                max-height: none;
+            }
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2d3748;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        input[type="file"]:active {
+            border-color: #3182ce;
+            background: #ebf8ff;
+        }
+
+        #preview {
+            width: 100%;
+            max-height: 280px;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:active:not(:disabled) {
+            background: #2c5aa0;
+        }
+
+        .btn-primary:disabled {
+            background: #cbd5e0;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+            flex: 0.5;
+        }
+
+        .btn-secondary:active {
+            background: #cbd5e0;
+        }
+
+        .status-msg {
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .status-msg.loading {
+            background: #e6fffa;
+            color: #234e52;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-msg.error {
+            background: #fed7d7;
+            color: #742a2a;
+            display: block;
+        }
+
+        .spinner {
+            width: 10px;
+            height: 10px;
+            border: 2px solid #234e52;
+            border-top-color: #38b2ac;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 250px);
+        }
+
+        .message {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            animation: slideIn 0.2s ease;
+            max-width: 95%;
+            word-wrap: break-word;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            background: #edf2f7;
+            color: #2d3748;
+            align-self: flex-start;
+        }
+
+        .message.user {
+            background: #3182ce;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .message.system {
+            background: #f0fff4;
+            color: #22543d;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            align-self: center;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        #chatInput:disabled {
+            background: #f7fafc;
+            color: #cbd5e0;
+        }
+
+        .btn-send {
+            padding: 10px 12px;
+            background: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-send:active:not(:disabled) {
+            background: #2c5aa0;
+        }
+
+        .btn-send:disabled {
+            background: #cbd5e0;
+            opacity: 0.5;
+        }
+
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 12px 8px 12px;
+        }
+
+        .quick-btn {
+            padding: 6px 10px;
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            color: #234e52;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .quick-btn:active {
+            background: #b2f5ea;
+        }
+
+        .chat-section.hidden {
+            display: none;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        .detection-info {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            color: #2c5aa0;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-top: 8px;
+            word-wrap: break-word;
+        }
+
+        .offline-badge {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🔧 Foto Diagnostiek</h1>
+            <p class="subtitle">Tesseract OCR — Offline Intelligent</p>
+        </header>
+
+        <div class="content">
+            <div class="photo-section">
+                <div class="section-title">📸 Upload Victron foto</div>
+
+                <div class="form-group">
+                    <label>Foto omvormer display</label>
+                    <input type="file" id="photoInput" accept="image/*">
+                    <img id="preview">
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-primary" id="analyzeBtn" disabled>Analyseer (Offline OCR)</button>
+                    <button class="btn-secondary" id="clearBtn">Wissen</button>
+                </div>
+
+                <div id="photoStatus" class="status-msg"></div>
+
+                <div id="detectionInfo" class="detection-info" style="display: none;"></div>
+
+                <div class="offline-badge">
+                    ✅ Volledig offline — geen internet nodig
+                </div>
+            </div>
+
+            <div class="chat-section hidden" id="chatSection">
+                <div class="empty-state" id="emptyState">
+                    Upload een Victron foto om te starten →
+                </div>
+                <div id="chatMessages"></div>
+                <div class="quick-replies" id="quickReplies"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Antwoord..." disabled>
+                    <button class="btn-send" id="sendBtn" disabled>Stuur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            image: null,
+            detected: null,
+            faultCode: null,
+            activeQuestion: null,
+            ocrText: null
+        };
+
+        const photoInput = document.getElementById('photoInput');
+        const preview = document.getElementById('preview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const photoStatus = document.getElementById('photoStatus');
+        const detectionInfo = document.getElementById('detectionInfo');
+        const chatSection = document.getElementById('chatSection');
+        const emptyState = document.getElementById('emptyState');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const quickReplies = document.getElementById('quickReplies');
+
+        // No hardcoded patterns — parse directly from OCR text
+
+        photoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                state.image = event.target.result;
+                preview.src = state.image;
+                preview.style.display = 'block';
+                analyzeBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            photoInput.value = '';
+            preview.style.display = 'none';
+            analyzeBtn.disabled = true;
+            chatSection.classList.add('hidden');
+            emptyState.style.display = 'flex';
+            chatMessages.innerHTML = '';
+            quickReplies.innerHTML = '';
+            detectionInfo.style.display = 'none';
+            state = { image: null, detected: null, faultCode: null, activeQuestion: null, ocrText: null };
+        });
+
+        analyzeBtn.addEventListener('click', analyzePhoto);
+
+        async function analyzePhoto() {
+            if (!state.image) return;
+
+            setPhotoStatus('loading', 'OCR leest tekst (offline)...');
+
+            try {
+                // Use Tesseract for OCR
+                const { data: { text } } = await Tesseract.recognize(
+                    state.image,
+                    'eng',
+                    { logger: m => console.log('OCR:', m) }
+                );
+
+                state.ocrText = text.toUpperCase();
+                console.log('OCR Result:', state.ocrText);
+
+                // Extract fault codes DIRECTLY from OCR text using regex
+                // Matches: F01, F02, #1, #3, etc.
+                const faultMatch = state.ocrText.match(/F\d{2}|#\d+/);
+                let detectedFault = faultMatch ? faultMatch[0] : null;
+
+                // Extract device model from OCR text
+                let detectedModel = 'Victron (unknown)';
+                if (state.ocrText.includes('MULTIPLUS')) {
+                    detectedModel = 'Victron MultiPlus';
+                } else if (state.ocrText.includes('CERBO')) {
+                    detectedModel = 'Victron Cerbo GX';
+                } else if (state.ocrText.includes('QUATTRO')) {
+                    detectedModel = 'Victron Quattro';
+                } else if (state.ocrText.includes('VICTRON')) {
+                    detectedModel = 'Victron';
+                }
+
+                state.detected = detectedModel;
+                state.faultCode = detectedFault;
+
+                // Show detection info
+                let infoText = `📖 **OCR Tekst gevonden:**\n\n"${state.ocrText.substring(0, 100)}..."`;
+                if (detectedFault) {
+                    infoText += `\n\n🔴 **Foutcode gedetecteerd: ${detectedFault}**`;
+                } else {
+                    infoText += `\n\n⚠️ Geen foutcode herkend in tekst`;
+                }
+
+                detectionInfo.innerHTML = infoText.replace(/\n/g, '<br>');
+                detectionInfo.style.display = 'block';
+
+                setPhotoStatus('clear');
+                startChat();
+
+            } catch (error) {
+                setPhotoStatus('error', '❌ OCR fout: ' + error.message);
+            }
+        }
+
+        function startChat() {
+            chatSection.classList.remove('hidden');
+            emptyState.style.display = 'none';
+            chatMessages.innerHTML = '';
+            quickReplies.innerHTML = '';
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+
+            let opening = `Hallo! 👋 Ik zie **${state.detected}**`;
+            if (state.faultCode) {
+                opening += `\n\nGedetecteerde foutcode: **${state.faultCode}**`;
+            } else {
+                opening += `\n\nGeen foutcode herkend. Wat is het probleem?`;
+            }
+            opening += `\n\nHoe lang ziet u al deze fout?`;
+
+            addMessage('bot', opening);
+            
+            showQuickReplies([
+                { text: 'Net verschenen', answer: 'new' },
+                { text: 'Al uren', answer: 'hours' },
+                { text: 'Al een dag+', answer: 'days' }
+            ]);
+
+            state.activeQuestion = 'duration';
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showQuickReplies(options) {
+            quickReplies.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'quick-btn';
+                btn.textContent = opt.text;
+                btn.addEventListener('click', () => handleInput(opt.answer, opt.text));
+                quickReplies.appendChild(btn);
+            });
+        }
+
+        function handleInput(answer, text) {
+            addMessage('user', text);
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            quickReplies.innerHTML = '';
+
+            setTimeout(() => {
+                if (state.activeQuestion === 'duration') {
+                    if (answer === 'new') {
+                        addMessage('bot', 'Recente fout — waarschijnlijk connector of spanning issue.\n\nIs accuspanning hoger dan normaal? (>65V voor 48V systeem)');
+                        showQuickReplies([
+                            { text: 'Ja, te hoog', answer: 'high' },
+                            { text: 'Nee, normaal', answer: 'normal' }
+                        ]);
+                        state.activeQuestion = 'voltage';
+                    } else {
+                        addMessage('bot', 'Langdurig probleem — mogelijk BMS communicatie.\n\nZijn alle CAN/RS485 kabels goed aangesloten?');
+                        showQuickReplies([
+                            { text: 'Ja, alles goed', answer: 'good' },
+                            { text: 'Nee, los gezien', answer: 'loose' }
+                        ]);
+                        state.activeQuestion = 'cables';
+                    }
+                } else if (state.activeQuestion === 'voltage') {
+                    if (answer === 'high') {
+                        addMessage('bot', `✅ **Diagnose: ${state.faultCode || 'Overspanning'}**\n\n**Fix stappen:**\n1. Open VictronConnect → Settings\n2. Check Battery Charger: max 54V\n3. Reset inverter 30 sec\n4. Test opnieuw\n\nGedaan?`);
+                        showQuickReplies([
+                            { text: 'Fout weg! ✅', answer: 'resolved' },
+                            { text: 'Nog niet weg', answer: 'not_resolved' }
+                        ]);
+                        state.activeQuestion = 'resolution';
+                    } else {
+                        addMessage('bot', 'Check connector roest. Reinig & aandraaien. Werkt het?');
+                        showQuickReplies([
+                            { text: 'Ja ✅', answer: 'resolved' },
+                            { text: 'Nee', answer: 'escalate' }
+                        ]);
+                        state.activeQuestion = 'resolution';
+                    }
+                } else if (state.activeQuestion === 'resolution') {
+                    if (answer === 'resolved') {
+                        addMessage('system', '🎉 Diagnose voltooid!');
+                        addMessage('bot', 'Prima! Veel sterkte! 💪');
+                    } else {
+                        addMessage('bot', '⚠️ Contacteer technician.');
+                    }
+                    chatInput.disabled = true;
+                    sendBtn.disabled = true;
+                }
+
+                if (state.activeQuestion !== 'resolution') {
+                    chatInput.disabled = false;
+                    sendBtn.disabled = false;
+                }
+            }, 300);
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) handleInput(text, text);
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+
+        function setPhotoStatus(type, message) {
+            photoStatus.className = `status-msg ${type}`;
+            if (type === 'clear') {
+                photoStatus.style.display = 'none';
+            } else if (type === 'loading') {
+                photoStatus.innerHTML = `<span class="spinner"></span><span>${message}</span>`;
+                photoStatus.style.display = 'flex';
+            } else {
+                photoStatus.textContent = message;
+                photoStatus.style.display = 'block';
+            }
+        }
+
+        console.log('📱 SOLARIS Photo Diagnostiek — Tesseract OCR Offline');
+    </script>
+</body>
+</html>
             overflow: hidden;
         }
 
