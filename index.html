@@ -9,7 +9,768 @@
     <style>
         * {
             margin: 0;
+            padding: 0;<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SOLARIS — Foto Diagnostiek</title>
+    <style>
+        * {
+            margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'DM Sans', sans-serif;
+            background: #f5f7fa;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1a202c;
+        }
+
+        .modal p {
+            font-size: 13px;
+            color: #4a5568;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: monospace;
+            margin-bottom: 16px;
+        }
+
+        .modal button {
+            width: 100%;
+            padding: 12px;
+            background: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .modal button:active {
+            background: #2c5aa0;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .content {
+                flex-direction: row;
+            }
+        }
+
+        .photo-section {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 0 0 auto;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            max-height: calc(100vh - 250px);
+        }
+
+        @media (min-width: 768px) {
+            .photo-section {
+                flex: 0 0 40%;
+                border-bottom: none;
+                border-right: 1px solid #e2e8f0;
+                max-height: none;
+            }
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2d3748;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        input[type="file"]:active {
+            border-color: #3182ce;
+            background: #ebf8ff;
+        }
+
+        #preview {
+            width: 100%;
+            max-height: 280px;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:active:not(:disabled) {
+            background: #2c5aa0;
+        }
+
+        .btn-primary:disabled {
+            background: #cbd5e0;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+            flex: 0.5;
+        }
+
+        .btn-secondary:active {
+            background: #cbd5e0;
+        }
+
+        .status-msg {
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .status-msg.loading {
+            background: #e6fffa;
+            color: #234e52;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-msg.error {
+            background: #fed7d7;
+            color: #742a2a;
+            display: block;
+        }
+
+        .status-msg.success {
+            background: #c6f6d5;
+            color: #22543d;
+            display: block;
+        }
+
+        .spinner {
+            width: 10px;
+            height: 10px;
+            border: 2px solid #234e52;
+            border-top-color: #38b2ac;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 250px);
+        }
+
+        .message {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            animation: slideIn 0.2s ease;
+            max-width: 95%;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            background: #edf2f7;
+            color: #2d3748;
+            align-self: flex-start;
+        }
+
+        .message.user {
+            background: #3182ce;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .message.system {
+            background: #f0fff4;
+            color: #22543d;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            align-self: center;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        #chatInput:disabled {
+            background: #f7fafc;
+            color: #cbd5e0;
+        }
+
+        .btn-send {
+            padding: 10px 12px;
+            background: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-send:active:not(:disabled) {
+            background: #2c5aa0;
+        }
+
+        .btn-send:disabled {
+            background: #cbd5e0;
+            opacity: 0.5;
+        }
+
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 12px 8px 12px;
+        }
+
+        .quick-btn {
+            padding: 6px 10px;
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            color: #234e52;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .quick-btn:active {
+            background: #b2f5ea;
+        }
+
+        .chat-section.hidden {
+            display: none;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        .detection-info {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            color: #2c5aa0;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .api-status {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay" id="apiKeyModal">
+        <div class="modal">
+            <h2>🔑 Claude API Key</h2>
+            <p>Voer je Anthropic API key in. Deze wordt lokaal opgeslagen (niet verzonden).</p>
+            <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+            <button onclick="setApiKey()">Opslaan</button>
+            <p style="margin-top: 12px; font-size: 11px; color: #718096;">
+                💡 Haal key op van <a href="https://console.anthropic.com" target="_blank" style="color: #3182ce;">console.anthropic.com</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <h1>🔧 Foto Diagnostiek</h1>
+            <p class="subtitle">Claude Vision OCR — Victron analyse</p>
+        </header>
+
+        <div class="content">
+            <div class="photo-section">
+                <div class="section-title">📸 Upload Victron foto</div>
+
+                <div class="form-group">
+                    <label>Foto omvormer display</label>
+                    <input type="file" id="photoInput" accept="image/*">
+                    <img id="preview">
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-primary" id="analyzeBtn" disabled>Analyseer (Claude Vision)</button>
+                    <button class="btn-secondary" id="clearBtn">Wissen</button>
+                </div>
+
+                <div id="photoStatus" class="status-msg"></div>
+                <div class="api-status" id="apiStatus">API Key: Opgeslagen ✓</div>
+
+                <div id="diagnosticInfo" style="margin-top: 16px; padding: 12px; background: #f7fafc; border-radius: 6px; display: none; font-size: 12px;">
+                    <div style="color: #2d3748; margin-bottom: 4px;">
+                        <strong>Gedetecteerd:</strong> <span id="detectionDisplay" style="font-family: monospace; color: #3182ce;"></span>
+                    </div>
+                    <div style="color: #2d3748;">
+                        <strong>Fault Code:</strong> <span id="faultCodeDisplay" style="font-family: monospace; color: #e53e3e;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-section hidden" id="chatSection">
+                <div class="empty-state" id="emptyState">
+                    Upload een Victron foto om te starten →
+                </div>
+                <div id="chatMessages"></div>
+                <div class="quick-replies" id="quickReplies"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Antwoord..." disabled>
+                    <button class="btn-send" id="sendBtn" disabled>Stuur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            apiKey: null,
+            image: null,
+            detected: null,
+            faultCode: null,
+            activeQuestion: null,
+            model: null
+        };
+
+        const photoInput = document.getElementById('photoInput');
+        const preview = document.getElementById('preview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const photoStatus = document.getElementById('photoStatus');
+        const diagnosticInfo = document.getElementById('diagnosticInfo');
+        const chatSection = document.getElementById('chatSection');
+        const emptyState = document.getElementById('emptyState');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const quickReplies = document.getElementById('quickReplies');
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const apiStatus = document.getElementById('apiStatus');
+
+        // Init API key
+        function initApiKey() {
+            state.apiKey = localStorage.getItem('solaris_api_key');
+            if (state.apiKey) {
+                apiKeyModal.classList.add('hidden');
+                apiStatus.innerHTML = '✅ API Key: Opgeslagen';
+            } else {
+                apiStatus.innerHTML = '❌ API Key: Vereist';
+            }
+        }
+
+        function setApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (!key) return alert('Voer API key in');
+            localStorage.setItem('solaris_api_key', key);
+            state.apiKey = key;
+            apiKeyModal.classList.add('hidden');
+            apiStatus.innerHTML = '✅ API Key: Opgeslagen';
+        }
+
+        photoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                state.image = event.target.result;
+                preview.src = state.image;
+                preview.style.display = 'block';
+                analyzeBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            photoInput.value = '';
+            preview.style.display = 'none';
+            analyzeBtn.disabled = true;
+            chatSection.classList.add('hidden');
+            emptyState.style.display = 'flex';
+            chatMessages.innerHTML = '';
+            quickReplies.innerHTML = '';
+            diagnosticInfo.style.display = 'none';
+            state = { ...state, image: null, detected: null, faultCode: null, activeQuestion: null };
+        });
+
+        analyzeBtn.addEventListener('click', analyzePhoto);
+
+        async function analyzePhoto() {
+            if (!state.image || !state.apiKey) {
+                setPhotoStatus('error', '❌ API Key vereist');
+                return;
+            }
+
+            setPhotoStatus('loading', 'Foto analyseren met Claude Vision...');
+
+            try {
+                const base64 = state.image.split(',')[1];
+
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': state.apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-opus-4-1-20250805',
+                        max_tokens: 500,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'image',
+                                    source: {
+                                        type: 'base64',
+                                        media_type: 'image/jpeg',
+                                        data: base64
+                                    }
+                                },
+                                {
+                                    type: 'text',
+                                    text: `Analyseer deze Victron omvormer foto. Geef alleen:
+1. Victron model (bijv: MultiPlus-II, Cerbo GX, etc)
+2. Fault/error codes die je ziet (bijv: F01, F02, #10)
+3. Status display tekst
+
+Format EXACT zo:
+MODEL: [model]
+FAULT_CODE: [code of "NONE"]
+DISPLAY_TEXT: [wat op scherm staat]`
+                                }
+                            ]
+                        })
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || 'API error');
+                }
+
+                const data = await response.json();
+                const text = data.content[0].text;
+
+                // Parse response
+                const modelMatch = text.match(/MODEL:\s*([^\n]+)/);
+                const codeMatch = text.match(/FAULT_CODE:\s*([^\n]+)/);
+
+                state.detected = modelMatch ? modelMatch[1].trim() : 'Victron (unknown)';
+                state.faultCode = codeMatch ? codeMatch[1].trim() : 'F00';
+
+                if (state.faultCode === 'NONE') state.faultCode = 'No fault';
+
+                document.getElementById('detectionDisplay').textContent = state.detected;
+                document.getElementById('faultCodeDisplay').textContent = state.faultCode;
+                diagnosticInfo.style.display = 'block';
+
+                setPhotoStatus('success', '✅ Analysering klaar');
+                startChat();
+
+            } catch (error) {
+                setPhotoStatus('error', '❌ ' + error.message);
+            }
+        }
+
+        function startChat() {
+            chatSection.classList.remove('hidden');
+            emptyState.style.display = 'none';
+            chatMessages.innerHTML = '';
+            quickReplies.innerHTML = '';
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+
+            if (state.faultCode === 'No fault') {
+                addMessage('bot', `✅ Goed nieuws! Je **${state.detected}** geeft geen foutcodes.\n\nWerkt alles normaal?`);
+                showQuickReplies([
+                    { text: 'Ja, alles OK', answer: 'ok' },
+                    { text: 'Nee, probleem', answer: 'issue' }
+                ]);
+                state.activeQuestion = 'status';
+            } else {
+                addMessage('bot', `Hallo! 👋 Ik zie **${state.detected}**\n\nFoutcode gedetecteerd: **${state.faultCode}**\n\nHoe lang ziet u al deze foutcode?`);
+                showQuickReplies([
+                    { text: 'Net verschenen', answer: 'new' },
+                    { text: 'Al uren', answer: 'hours' },
+                    { text: 'Al een dag+', answer: 'days' }
+                ]);
+                state.activeQuestion = 'duration';
+            }
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showQuickReplies(options) {
+            quickReplies.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'quick-btn';
+                btn.textContent = opt.text;
+                btn.addEventListener('click', () => handleInput(opt.answer, opt.text));
+                quickReplies.appendChild(btn);
+            });
+        }
+
+        function handleInput(answer, text) {
+            addMessage('user', text);
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            quickReplies.innerHTML = '';
+
+            setTimeout(() => {
+                if (state.activeQuestion === 'duration') {
+                    if (answer === 'new') {
+                        addMessage('bot', 'Recente fout — waarschijnlijk connector of spanning issue.\n\nIs accuspanning hoger dan normaal? (>65V voor 48V)');
+                        showQuickReplies([
+                            { text: 'Ja, te hoog', answer: 'high' },
+                            { text: 'Nee, normaal', answer: 'normal' }
+                        ]);
+                        state.activeQuestion = 'voltage';
+                    } else {
+                        addMessage('bot', 'Langdurig probleem — mogelijk BMS communicatie.\n\nZijn alle CAN/RS485 kabels goed?');
+                        showQuickReplies([
+                            { text: 'Ja', answer: 'good' },
+                            { text: 'Nee, los', answer: 'loose' }
+                        ]);
+                        state.activeQuestion = 'cables';
+                    }
+                } else if (state.activeQuestion === 'voltage') {
+                    addMessage('bot', `✅ **Fix:** Check Battery Charger max 54V. Reset 30sec. Werkt?`);
+                    showQuickReplies([
+                        { text: 'Ja ✅', answer: 'resolved' },
+                        { text: 'Nee', answer: 'escalate' }
+                    ]);
+                    state.activeQuestion = 'resolution';
+                } else if (state.activeQuestion === 'resolution') {
+                    if (answer === 'resolved') {
+                        addMessage('system', '🎉 Diagnose voltooid!');
+                    } else {
+                        addMessage('bot', '⚠️ Contacteer technician.');
+                    }
+                    chatInput.disabled = true;
+                    sendBtn.disabled = true;
+                }
+
+                if (state.activeQuestion !== 'resolution') {
+                    chatInput.disabled = false;
+                    sendBtn.disabled = false;
+                }
+            }, 300);
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) handleInput(text, text);
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+
+        function setPhotoStatus(type, message) {
+            photoStatus.className = `status-msg ${type}`;
+            if (type === 'clear') {
+                photoStatus.style.display = 'none';
+            } else if (type === 'loading') {
+                photoStatus.innerHTML = `<span class="spinner"></span><span>${message}</span>`;
+                photoStatus.style.display = 'flex';
+            } else {
+                photoStatus.textContent = message;
+                photoStatus.style.display = 'block';
+            }
+        }
+
+        // Start
+        initApiKey();
+        console.log('📱 SOLARIS Photo Diagnostiek — Claude Vision ready');
+    </script>
+</body>
+</html>
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
