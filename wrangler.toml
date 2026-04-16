@@ -1,0 +1,9 @@
+[env.production]
+routes = []
+build = { command = "echo 'Static HTML'" }
+
+[build]
+command = "echo 'Static HTML'"
+
+[site]
+bucket = "."
