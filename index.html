@@ -178,14 +178,16 @@
             overflow: hidden;
         }
 
-        #chatMessages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            -webkit-overflow-scrolling: touch;
+     #chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 250px);
+
         }
 
         .message {
